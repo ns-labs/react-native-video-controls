@@ -207,6 +207,10 @@ export default class VideoPlayer extends Component {
             if (state.showControls) {
                 this.setControlTimeout();
             }
+            if ( !state.seeking ) {
+                const position = this.calculateSeekerPosition();
+                this.setSeekerPosition( position );
+            }
             this.setState(state);
         } else {
             state.duration = data.duration;
@@ -215,9 +219,9 @@ export default class VideoPlayer extends Component {
             if (state.showControls) {
                 this.setControlTimeout();
             }
-            if (typeof this.props.onLoad === 'function') {
-                this.props.onLoad(...arguments);
-            }
+        }
+        if (typeof this.props.onLoad === 'function') {
+            this.props.onLoad(...arguments);
         }
     }
 
@@ -254,9 +258,9 @@ export default class VideoPlayer extends Component {
         let state = this.state;
         state.paused = true;
         state.loading = false;
+        state.isFullscreen = false;
         this.setState( state );
         this.setSeekerPosition( 0 );
-        this.methods.toggleFullscreen();
     }
 
     /**
@@ -284,9 +288,9 @@ export default class VideoPlayer extends Component {
         const time = new Date().getTime();
         const delta =  time - state.lastScreenPress;
 
-        if ( delta < 300 ) {
-            this.methods.toggleFullscreen();
-        }
+        // if ( delta < 300 ) {
+        //     this.methods.toggleFullscreen();
+        // }
 
         this.methods.toggleControls();
         state.lastScreenPress = time;
@@ -762,6 +766,8 @@ export default class VideoPlayer extends Component {
             // Ask to be the responder.
             onStartShouldSetPanResponder: ( evt, gestureState ) => true,
             onMoveShouldSetPanResponder: ( evt, gestureState ) => true,
+            onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
+            onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
 
             /**
              * When we start the pan tell the machine that we're
@@ -809,8 +815,10 @@ export default class VideoPlayer extends Component {
      */
     initVolumePanResponder() {
         this.player.volumePanResponder = PanResponder.create({
-            onStartShouldSetPanResponder: ( evt, gestureState ) => true,
-            onMoveShouldSetPanResponder: ( evt, gestureState ) => true,
+            onStartShouldSetPanResponder: (evt, gestureState) => true,
+            onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
+            onMoveShouldSetPanResponder: (evt, gestureState) => true,
+            onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
             onPanResponderGrant: ( evt, gestureState ) => {
                 this.clearControlTimeout();
             },
