@@ -196,18 +196,17 @@ export default class VideoPlayer extends Component {
      * @param {object} data The video meta data
      */
     _onLoad( data = {} ) {
+        //Karan - for handling of video play from state in full screen
         let state = this.state;
-        if (this.props.initialTime) {
+        if ( this.props.VideoPlayerPrevState && this.props.initialTime ) {
+            state = this.props.VideoPlayerPrevState
+            state.resizeMode = 'contain';
+            state.isFullscreen = false
             state.loading = false;
             this.seekTo(this.props.initialTime);
             if (state.showControls) {
                 this.setControlTimeout();
             }
-
-            // state.seekerFillWidth = this.props.seekerFillWidth
-            // state.seekerOffset = this.props.seekerOffset
-            // state.seekerPosition = this.props.seekerPosition
-
             this.setState(state);
         } else {
             state.duration = data.duration;
@@ -251,12 +250,13 @@ export default class VideoPlayer extends Component {
      */
 
      //Karan - changes on ending video
-    _onEnd(data = {}) {
+    _onEnd() {
         let state = this.state;
         state.paused = true;
         state.loading = false;
         this.setState( state );
         this.setSeekerPosition( 0 );
+        this.methods.toggleFullscreen();
     }
 
     /**
