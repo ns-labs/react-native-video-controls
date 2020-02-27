@@ -6,8 +6,9 @@ import {
     ImageBackground,
     PanResponder,
     StyleSheet,
+    Touchable,
     Animated,
-    SafeAreaView,
+    Platform,
     Easing,
     Image,
     View,
@@ -29,7 +30,6 @@ export default class VideoPlayer extends Component {
         muted:                          false,
         title:                          '',
         rate:                           1,
-        isFullscreen:                   false,
     };
 
     constructor( props ) {
@@ -48,7 +48,7 @@ export default class VideoPlayer extends Component {
             rate: this.props.rate,
             // Controls
 
-            isFullscreen: this.props.isFullScreen || this.props.resizeMode === 'cover' || false,
+            isFullscreen: this.props.resizeMode === 'cover' || false,
             showTimeRemaining: true,
             volumeTrackWidth: 0,
             lastScreenPress: 0,
@@ -84,7 +84,7 @@ export default class VideoPlayer extends Component {
             onBack: this.props.onBack || this._onBack.bind( this ),
             onEnd: this.props.onEnd || this._onEnd.bind( this ),
             onScreenTouch: this._onScreenTouch.bind( this ),
-            onEnterFullscreen: this.props.onEnterFullscreen,
+            onEnterFullscreen: this.props.onEnterFullscreen || this._onEnterFullscreen.bind( this ),
             onExitFullscreen: this.props.onExitFullscreen,
             onLoadStart: this._onLoadStart.bind( this ),
             onProgress: this._onProgress.bind( this ),
@@ -112,8 +112,8 @@ export default class VideoPlayer extends Component {
             seekPanResponder: PanResponder,
             controlTimeout: null,
             volumeWidth: 150,
-            iconOffset: 0,
-            seekerWidth: 0,
+            iconOffset: 7,
+            seekWidth: 0,
             ref: Video,
         };
 
@@ -163,6 +163,17 @@ export default class VideoPlayer extends Component {
     */
 
     /**
+     * When enters in we fullscreen view
+     * and show the controls.
+     * @param {object} data The video meta data
+     */
+    _onEnterFullscreen() {
+        let state = this.state;
+        state.currentTime = time;
+        this.setState( state );
+    }
+
+    /**
      * When load starts we display a loading icon
      * and show the controls.
      */
@@ -185,17 +196,31 @@ export default class VideoPlayer extends Component {
      * @param {object} data The video meta data
      */
     _onLoad( data = {} ) {
+        //Karan - for handling of video play from state in full screen
         let state = this.state;
-
-        state.duration = data.duration;
-        state.loading = false;
-        this.setState( state );
-
-        if ( state.showControls ) {
-            this.setControlTimeout();
+        if ( this.props.VideoPlayerPrevState && this.props.initialTime ) {
+            state = this.props.VideoPlayerPrevState
+            state.resizeMode = 'contain';
+            state.isFullscreen = false
+            state.loading = false;
+            this.seekTo(this.props.initialTime);
+            if (state.showControls) {
+                this.setControlTimeout();
+            }
+            if ( !state.seeking ) {
+                const position = this.calculateSeekerPosition();
+                this.setSeekerPosition( position );
+            }
+            this.setState(state);
+        } else {
+            state.duration = data.duration;
+            state.loading = false;
+            this.setState(state);
+            if (state.showControls) {
+                this.setControlTimeout();
+            }
         }
-
-        if ( typeof this.props.onLoad === 'function' ) {
+        if (typeof this.props.onLoad === 'function') {
             this.props.onLoad(...arguments);
         }
     }
@@ -209,7 +234,6 @@ export default class VideoPlayer extends Component {
     _onProgress( data = {} ) {
         let state = this.state;
         state.currentTime = data.currentTime;
-
         if ( ! state.seeking ) {
             const position = this.calculateSeekerPosition();
             this.setSeekerPosition( position );
@@ -228,7 +252,16 @@ export default class VideoPlayer extends Component {
      * Either close the video or go to a
      * new page.
      */
-    _onEnd() {}
+
+     //Karan - changes on ending video
+    _onEnd() {
+        let state = this.state;
+        state.paused = true;
+        state.loading = false;
+        state.isFullscreen = false;
+        this.setState( state );
+        this.setSeekerPosition( 0 );
+    }
 
     /**
      * Set the error state to true which then
@@ -255,9 +288,9 @@ export default class VideoPlayer extends Component {
         const time = new Date().getTime();
         const delta =  time - state.lastScreenPress;
 
-        if ( delta < 300 ) {
-            this.methods.toggleFullscreen();
-        }
+        // if ( delta < 300 ) {
+        //     this.methods.toggleFullscreen();
+        // }
 
         this.methods.toggleControls();
         state.lastScreenPress = time;
@@ -433,6 +466,10 @@ export default class VideoPlayer extends Component {
 
         if (state.isFullscreen) {
             typeof this.events.onEnterFullscreen === 'function' && this.events.onEnterFullscreen();
+            // Karan - cahnges for background stop on fullscreen loading
+            let state = this.state;
+            state.paused = true;
+            this.setState( state );
         }
         else {
             typeof this.events.onExitFullscreen === 'function' && this.events.onExitFullscreen();
@@ -525,7 +562,6 @@ export default class VideoPlayer extends Component {
     setSeekerPosition( position = 0 ) {
         let state = this.state;
         position = this.constrainToSeekerMinMax( position );
-
         state.seekerFillWidth = position;
         state.seekerPosition = position;
 
@@ -646,7 +682,7 @@ export default class VideoPlayer extends Component {
      * @return {float} volume handle position in px based on volume
      */
     calculateVolumePositionFromVolume() {
-        return this.player.volumeWidth * this.state.volume;
+        return this.player.volumeWidth / this.state.volume;
     }
 
 
@@ -666,7 +702,7 @@ export default class VideoPlayer extends Component {
      * Before mounting, init our seekbar and volume bar
      * pan responders.
      */
-    UNSAFE_componentWillMount() {
+    componentWillMount() {
         this.initSeekPanResponder();
         this.initVolumePanResponder();
     }
@@ -675,21 +711,14 @@ export default class VideoPlayer extends Component {
      * To allow basic playback management from the outside
      * we have to handle possible props changes to state changes
      */
-    UNSAFE_componentWillReceiveProps(nextProps) {
-        if (this.state.paused !== nextProps.paused ) {
-            this.setState({
-                paused: nextProps.paused
-            })
-        }
-
-        if(this.styles.videoStyle !== nextProps.videoStyle){
-            this.styles.videoStyle = nextProps.videoStyle;
-        }
-
-        if(this.styles.containerStyle !== nextProps.style){
-            this.styles.containerStyle = nextProps.style;
-        }
-    }
+    // Karan - commenting this 
+    // componentWillReceiveProps(nextProps) {
+    //     if (this.state.paused !== nextProps.paused ) {
+    //         this.setState({
+    //             paused: nextProps.paused
+    //         })
+    //     }
+    // }
 
     /**
      * Upon mounting, calculate the position of the volume
@@ -698,20 +727,34 @@ export default class VideoPlayer extends Component {
     componentDidMount() {
         const position = this.calculateVolumePositionFromVolume();
         let state = this.state;
-        this.setVolumePosition( position );
-        state.volumeOffset = position;
         this.mounted = true;
-
         this.setState( state );
+
+        //Karan - added seek volume  at 0 when mute
+        if(this.state.muted == true){
+            this.setVolumePosition( 0 );
+            state.volumeOffset = 0;
+        }else{
+            this.setVolumePosition( position );
+            state.volumeOffset = position;
+        }
     }
 
     /**
      * When the component is about to unmount kill the
      * timeout less it fire in the prev/next scene
      */
+
     componentWillUnmount() {
         this.mounted = false;
         this.clearControlTimeout();
+    }
+    
+    //Karan - creating this method for pause issue
+    componentDidUpdate(prevProps) {
+        if (this.props.paused != prevProps.paused && this.state.paused != this.props.paused) {
+            this.setState({ paused: this.props.paused })
+        }
     }
 
     /**
@@ -723,6 +766,8 @@ export default class VideoPlayer extends Component {
             // Ask to be the responder.
             onStartShouldSetPanResponder: ( evt, gestureState ) => true,
             onMoveShouldSetPanResponder: ( evt, gestureState ) => true,
+            onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
+            onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
 
             /**
              * When we start the pan tell the machine that we're
@@ -739,7 +784,7 @@ export default class VideoPlayer extends Component {
             /**
              * When panning, update the seekbar position, duh.
              */
-            onPanResponderMove: ( evt, gestureState ) => {
+            onPanResponderMove: ( evt, gestureState ) => { 
                 const position = this.state.seekerOffset + gestureState.dx;
                 this.setSeekerPosition( position );
             },
@@ -770,8 +815,10 @@ export default class VideoPlayer extends Component {
      */
     initVolumePanResponder() {
         this.player.volumePanResponder = PanResponder.create({
-            onStartShouldSetPanResponder: ( evt, gestureState ) => true,
-            onMoveShouldSetPanResponder: ( evt, gestureState ) => true,
+            onStartShouldSetPanResponder: (evt, gestureState) => true,
+            onStartShouldSetPanResponderCapture: (evt, gestureState) => true,
+            onMoveShouldSetPanResponder: (evt, gestureState) => true,
+            onMoveShouldSetPanResponderCapture: (evt, gestureState) => true,
             onPanResponderGrant: ( evt, gestureState ) => {
                 this.clearControlTimeout();
             },
@@ -872,20 +919,20 @@ export default class VideoPlayer extends Component {
                 styles.controls.top,
                 {
                     opacity: this.animations.topControl.opacity,
-                    marginTop: this.animations.topControl.marginTop,
+                    // marginTop: this.animations.topControl.marginTop, // Karan - commenting this code
                 }
             ]}>
                 <ImageBackground
                     source={ require( './assets/img/top-vignette.png' ) }
                     style={[ styles.controls.column ]}
                     imageStyle={[ styles.controls.vignette ]}>
-                    <SafeAreaView style={styles.controls.topControlGroup}>
-                      {backControl}
-                      <View style={styles.controls.pullRight}>
-                        {volumeControl}
-                        {fullscreenControl}
-                      </View>
-                    </SafeAreaView>
+                    <View style={ styles.controls.topControlGroup }>
+                        { backControl }
+                        <View style={ styles.controls.pullRight }>
+                            { volumeControl }
+                            { fullscreenControl }
+                        </View>
+                    </View>
                 </ImageBackground>
             </Animated.View>
         );
@@ -961,7 +1008,7 @@ export default class VideoPlayer extends Component {
                 styles.controls.bottom,
                 {
                     opacity: this.animations.bottomControl.opacity,
-                    marginBottom: this.animations.bottomControl.marginBottom,
+                    // marginBottom: this.animations.bottomControl.marginBottom, // Karan - commenting this code
                 }
             ]}>
                 <ImageBackground
@@ -969,12 +1016,15 @@ export default class VideoPlayer extends Component {
                     style={[ styles.controls.column ]}
                     imageStyle={[ styles.controls.vignette ]}>
                     { seekbarControl }
-                    <SafeAreaView
-                      style={[styles.controls.row, styles.controls.bottomControlGroup]}>
-                      {playPauseControl}
-                      {this.renderTitle()}
-                      {timerControl}
-                    </SafeAreaView>
+                    <View style={[
+                        styles.controls.row,
+                        styles.controls.bottomControlGroup
+                    ]}>
+                        { playPauseControl }
+                        { this.renderTitle() }
+                        { timerControl }
+
+                    </View>
                 </ImageBackground>
             </Animated.View>
         );
@@ -1127,6 +1177,9 @@ export default class VideoPlayer extends Component {
                         onError={ this.events.onError }
                         onLoad={ this.events.onLoad }
                         onEnd={ this.events.onEnd }
+
+                        fullscreenAutorotate={true}
+						fullscreenOrientation={"landscape"}
 
                         style={[ styles.player.video, this.styles.videoStyle ]}
 
@@ -1307,9 +1360,6 @@ const styles = {
             marginTop: -24,
             marginLeft: -24,
             padding: 16,
-        },
-        icon: {
-            marginLeft:7
         }
     }),
     seekbar: StyleSheet.create({
