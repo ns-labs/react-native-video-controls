@@ -924,7 +924,7 @@ export default class VideoPlayer extends Component {
             ]}>
                 <ImageBackground
                     // source={ require( './assets/img/top-vignette.png' ) }
-                    style={[ styles.controls.column, { borderTopLeftRadius: 5, borderTopRightRadius: 5 } ]}
+                    style={[ styles.controls.column, this.props.topControls ]}
                     imageStyle={[ styles.controls.vignette ]}>
                     <View style={ styles.controls.topControlGroup }>
                         { backControl }
@@ -1013,7 +1013,7 @@ export default class VideoPlayer extends Component {
             ]}>
                 <ImageBackground
                     // source={ require( './assets/img/bottom-vignette.png' ) }
-                    style={[ styles.controls.column, { borderBottomLeftRadius: 5, borderBottomRightRadius: 5 } ]}
+                    style={[ styles.controls.column, this.props.bottomControls ]}
                     imageStyle={[ styles.controls.vignette ]}>
                     { seekbarControl }
                     <View style={[
