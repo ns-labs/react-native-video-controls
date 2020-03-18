@@ -923,8 +923,8 @@ export default class VideoPlayer extends Component {
                 }
             ]}>
                 <ImageBackground
-                    source={ require( './assets/img/top-vignette.png' ) }
-                    style={[ styles.controls.column ]}
+                    // source={ require( './assets/img/top-vignette.png' ) }
+                    style={[ styles.controls.column, this.props.topControls ]}
                     imageStyle={[ styles.controls.vignette ]}>
                     <View style={ styles.controls.topControlGroup }>
                         { backControl }
@@ -1012,8 +1012,8 @@ export default class VideoPlayer extends Component {
                 }
             ]}>
                 <ImageBackground
-                    source={ require( './assets/img/bottom-vignette.png' ) }
-                    style={[ styles.controls.column ]}
+                    // source={ require( './assets/img/bottom-vignette.png' ) }
+                    style={[ styles.controls.column, this.props.bottomControls ]}
                     imageStyle={[ styles.controls.vignette ]}>
                     { seekbarControl }
                     <View style={[
@@ -1161,7 +1161,7 @@ export default class VideoPlayer extends Component {
                 onPress={ this.events.onScreenTouch }
                 style={[ styles.player.container, this.styles.containerStyle ]}
             >
-                <View style={[ styles.player.container, this.styles.containerStyle ]}>
+                <View style={[ styles.player.container, this.styles.containerStyle, this.props.containerStyle ]}>
                     <Video
                         { ...this.props }
                         ref={ videoPlayer => this.player.ref = videoPlayer }
@@ -1261,12 +1261,13 @@ const styles = {
             justifyContent: 'space-between',
             height: null,
             width: null,
+            backgroundColor: 'rgba(0, 0, 0, 0.4)'
         },
         vignette: {
             resizeMode: 'stretch'
         },
         control: {
-            padding: 16,
+            padding: 14,
         },
         text: {
             backgroundColor: 'transparent',
@@ -1296,7 +1297,7 @@ const styles = {
             flexDirection: 'row',
             width: null,
             margin: 12,
-            marginBottom: 18,
+            // marginBottom: 18,
         },
         bottomControlGroup: {
             alignSelf: 'stretch',
@@ -1347,13 +1348,15 @@ const styles = {
             width: 150,
         },
         track: {
-            backgroundColor: '#333',
+            backgroundColor: '#E6E8ED',
             height: 1,
             marginLeft: 7,
+            borderRadius: 100
         },
         fill: {
             backgroundColor: '#FFF',
             height: 1,
+            borderRadius: 100
         },
         handle: {
             position: 'absolute',
@@ -1365,21 +1368,24 @@ const styles = {
     seekbar: StyleSheet.create({
         container: {
             alignSelf: 'stretch',
-            height: 28,
+            height: 23,
             marginLeft: 20,
-            marginRight: 20
+            marginRight: 20,
+            marginTop: 5
         },
         track: {
-            backgroundColor: '#333',
-            height: 1,
+            backgroundColor: '#E6E8ED',
+            height: 2,
             position: 'relative',
             top: 14,
-            width: '100%'
+            width: '100%',
+            borderRadius: 100
         },
         fill: {
-            backgroundColor: '#FFF',
-            height: 1,
-            width: '100%'
+            backgroundColor: '#FFFFFF',
+            height: 2,
+            width: '100%',
+            borderRadius: 100
         },
         handle: {
             position: 'absolute',
@@ -1391,8 +1397,8 @@ const styles = {
             borderRadius: 12,
             position: 'relative',
             top: 8, left: 8,
-            height: 12,
-            width: 12,
+            height: 14,
+            width: 14,
         },
     })
 };
