@@ -802,6 +802,7 @@ export default class VideoPlayer extends Component {
              */
             onPanResponderRelease: ( evt, gestureState ) => {
                 const time = this.calculateTimeFromSeekerPosition();
+                const position = this.state.seekerOffset + gestureState.dx;
                 let state = this.state;
                 if ( time >= state.duration && ! state.loading ) {
                     state.paused = true;
@@ -810,6 +811,9 @@ export default class VideoPlayer extends Component {
                     this.seekTo( time );
                     this.setControlTimeout();
                     state.seeking = false;
+                    if ( !state.seeking ) {
+                        state.seekerOffset = position
+                    };
                 }
                 this.setState( state );
             }
