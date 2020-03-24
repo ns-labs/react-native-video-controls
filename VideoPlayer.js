@@ -147,6 +147,11 @@ export default class VideoPlayer extends Component {
             videoStyle: this.props.videoStyle || {},
             containerStyle: this.props.style || {}
         };
+
+        //Karan - Need to add this here for proper seeker moments
+        this.initSeekPanResponder();
+        this.initVolumePanResponder();
+
     }
 
 
@@ -702,10 +707,11 @@ export default class VideoPlayer extends Component {
      * Before mounting, init our seekbar and volume bar
      * pan responders.
      */
-    componentWillMount() {
-        this.initSeekPanResponder();
-        this.initVolumePanResponder();
-    }
+    // Karan - commenting this because constructor will respond fast on seekers
+    // componentWillMount() {
+    //     this.initSeekPanResponder();
+    //     this.initVolumePanResponder();
+    // }
 
     /**
      * To allow basic playback management from the outside
@@ -966,13 +972,14 @@ export default class VideoPlayer extends Component {
                 ]}/>
                 <View style={[
                     styles.volume.track,
-                    { width: this.state.volumeTrackWidth }
+                    { width: this.state.volumeTrackWidth, left: 2  } //Karan - Left 2 will be applicable in our volume icon case to adjust track width
                 ]}/>
                 <View
                     style={[
                         styles.volume.handle,
                         { left: this.state.volumePosition }
                     ]}
+                    hitSlop={{ left: 40, right: 40 }} //Karan - Additional point with hitSlop to make movemant smoother
                     { ...this.player.volumePanResponder.panHandlers }
                 >
                     <Image style={ styles.volume.icon } source={ require( './assets/img/volume.png' ) } />
@@ -1054,6 +1061,7 @@ export default class VideoPlayer extends Component {
                         styles.seekbar.handle,
                         { left: this.state.seekerPosition }
                     ]}
+                    hitSlop={{ left: 40, right: 40 }} //Karan - Additional point with hitSlop to make movemant smoother
                     { ...this.player.seekPanResponder.panHandlers }
                 >
                     <View style={[
